@@ -56,12 +56,15 @@ if resp.status_code == 200:
 
     for column_name in df.columns:
         print(column_name)
-        print(df[[column_name]].tail(10))
+        print(df[[column_name]])
         pass
 
     # print(df)
     #
-    print(df[['account_nm', 'thstrm_nm', 'thstrm_amount', 'frmtrm_nm', 'frmtrm_amount']])
+    df = df[['sj_div', 'sj_nm', 'account_nm', 'thstrm_nm', 'thstrm_amount', 'frmtrm_nm', 'frmtrm_amount']]
+
+    print( df[ (df['sj_div'] == 'IS') ] ) 
+    print( df[ (df['sj_div'] == 'BS') ] )
 
   else :
     print(data_json['message'])
