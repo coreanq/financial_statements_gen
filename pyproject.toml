@@ -8,9 +8,12 @@ authors = ["Your Name <you@example.com>"]
 python = "^3.9"
 OpenDartReader = "^0.1.6"
 bs4 = "^0.0.1"
+ipykernel = "^6.13.0"
+requests = "^2.27.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
+ipykernel = "^6.13.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
