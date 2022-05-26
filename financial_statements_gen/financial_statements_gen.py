@@ -34,7 +34,7 @@ if __name__ == "__main__":
     PARAMS = {
     'crtfc_key': api_key, # API 인증키
     'corp_code': '00126380', # 삼성전자 고유번호
-    'bsns_year': '2021', # 사업연도(4자리)
+    'bsns_year': '2022', # 사업연도(4자리)
     'reprt_code': '11013', # 사업보고서
     }
 
@@ -56,15 +56,27 @@ if resp.status_code == 200:
 
     for column_name in df.columns:
         print(column_name)
-        print(df[[column_name]])
+        # print(df[[column_name]])
         pass
 
     # print(df)
     #
-    df = df[['sj_div', 'sj_nm', 'account_nm', 'thstrm_nm', 'thstrm_amount', 'frmtrm_nm', 'frmtrm_amount']]
+    df = df[['fs_div', 'fs_nm', 'sj_div', 'sj_nm', 'account_nm', 'thstrm_nm', 'thstrm_amount', 'frmtrm_nm', 'frmtrm_amount']]
 
-    print( df[ (df['sj_div'] == 'IS') ] ) 
-    print( df[ (df['sj_div'] == 'BS') ] )
+    result = df.loc[(df.fs_div == 'OFS') & (df.sj_div == 'IS'),:]
+
+
+    is_df = { 'ofs' : df.loc[ (df.fs_div == 'OFS') & (df.sj_div == 'IS') ] ,
+              'cfs' : df.loc[ (df.fs_div == 'CFS') & (df.sj_div == 'IS') ] 
+    }
+
+    bs_df = { 'ofs' : df.loc[ (df.fs_div == 'OFS') & (df.sj_div == 'BS') ] ,
+              'cfs' : df.loc[ (df.fs_div == 'CFS') & (df.sj_div == 'BS') ] 
+    }
+
+    is_df['cfs'].to_excel("is.xlsx")
+    bs_df['cfs'].to_excel("bs.xlsx")
+
 
   else :
     print(data_json['message'])
