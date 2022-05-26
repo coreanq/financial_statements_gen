@@ -1,7 +1,8 @@
 import OpenDartReader
 import requests
 import pandas as pd
-import json
+import json,sys
+import numpy as np
 
 __vserion__  = "0.1.0"
 
@@ -61,7 +62,7 @@ if resp.status_code == 200:
 
     # print(df)
     #
-    df = df[['fs_div', 'fs_nm', 'sj_div', 'sj_nm', 'account_nm', 'thstrm_nm', 'thstrm_amount', 'frmtrm_nm', 'frmtrm_amount']]
+    df = df[['fs_div', 'fs_nm', 'sj_div', 'sj_nm', 'account_nm', 'thstrm_nm', 'thstrm_amount','thstrm_add_amount', 'frmtrm_nm', 'frmtrm_amount', 'frmtrm_add_amount']]
 
     result = df.loc[(df.fs_div == 'OFS') & (df.sj_div == 'IS'),:]
 
@@ -74,8 +75,36 @@ if resp.status_code == 200:
               'cfs' : df.loc[ (df.fs_div == 'CFS') & (df.sj_div == 'BS') ] 
     }
 
-    is_df['cfs'].to_excel("is.xlsx")
-    bs_df['cfs'].to_excel("bs.xlsx")
+    # is_df['cfs'].to_excel("is.xlsx")
+    # bs_df['cfs'].to_excel("bs.xlsx")
+
+    # print(bs_df['cfs'])
+
+    # print(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , ['thstrm_amount', 'frmtrm_amount'] ] )
+
+    print(sys.maxsize)
+
+    ths_jasan = int(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , 'thstrm_amount' ].iloc[0].replace(',', ''))
+    frm_jasan = int(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , 'frmtrm_amount' ].iloc[0].replace(',', ''))
+    ths_iik = int(is_df['cfs'].loc[ is_df['cfs'].account_nm == '당기순이익', 'thstrm_amount' ].iloc[0].replace(',', ''))
+
+
+
+    result_df = (ths_iik * 4)/ ((ths_jasan + frm_jasan) /2 ) * 100
+
+
+
+    print(result_df)
+
+    #calculate ROA
+    '''
+    ROA = 당기순이익(연율화) / 총자산총계(평균 )
+
+    당기순이익(연율화)에서 당기순이익을 어떻게 연율화하였는지 구체적인 식을 알고 싶습니다
+      연율화는 해당 분기의 데이터를 1년 기간으로 맞춰주는 작업입니다.
+      당기순이익 * 연율화계수 (1Q:4, 2Q:2, 3Q:4/3, 4Q:1)
+      (예: 누적 1분기*4, 2분기*2, 3분기4/3, 4분기*1)
+    '''
 
 
   else :
