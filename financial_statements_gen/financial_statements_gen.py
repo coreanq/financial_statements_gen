@@ -105,7 +105,15 @@ if resp.status_code == 200:
       당기순이익 * 연율화계수 (1Q:4, 2Q:2, 3Q:4/3, 4Q:1)
       (예: 누적 1분기*4, 2분기*2, 3분기4/3, 4분기*1)
     '''
+    df = pd.read_csv('20220527.txt', sep='\t', encoding='euc-kr' )
 
+
+    print(df.shape)
+
+    df.to_excel("result.xlsx")
+
+
+    print("done")
 
   else :
     print(data_json['message'])
