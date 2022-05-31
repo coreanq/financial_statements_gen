@@ -14,6 +14,40 @@ DART_URL_LIST = {
 
 api_key = ''
 
+
+def getBS(header_string : str) -> pd.DataFrame:
+  df = pd.read_csv( '{}_BS.txt'.format(header_string), sep='\t', encoding='euc-kr' )
+  # 불필요 열 삭제 
+  df.drop(['재무제표종류', '시장구분', '업종', '업종명', '통화'], axis='columns', inplace=True)
+  # print(df.head(60))
+
+  # 필요데이터만 추출 
+  # 자산총계 - 부채 총계 ->  순자산 
+  # 자산총계/부채총계/자본금 
+  # regx 로 원하는 내용과 일치하는 데이터만 추출 
+  filter = df['항목코드'].str.match('^ifrs-full_Assets$|^ifrs-full_Liabilities$|^ifrs-full_IssuedCapital$')
+  df = df[filter]
+  print(df.shape, df.index, df.columns)
+  print(df.head(60))
+  return df
+
+
+  pass
+
+def getPL(header_string : str) -> pd.DataFrame:
+  df = pd.read_csv( '{}_PL.txt'.format(header_string), sep='\t', encoding='euc-kr' )
+  # 불필요 열 삭제 
+  df.drop(['재무제표종류', '시장구분', '업종', '업종명', '통화'], axis='columns', inplace=True)
+  print(df.head(50))
+
+  # regx 로 원하는 내용과 일치하는 데이터만 추출 
+  filter = df['항목코드'].str.match('^ifrs-full_Revenue$|^ifrs-full_CostOfSales$|^ifrs-full_GrossProfit$|^ifrs-full_BasicEarningsLossPerShare$|^ifrs-full_BasicEarningsLossPerShareFromContinuingOperations$')
+  df = df[filter]
+  print(df.shape, df.index, df.columns)
+  print(df.head(50))
+  return df
+  pass
+
 if __name__ == "__main__":
 
     user_setting_json = []
@@ -32,91 +66,94 @@ if __name__ == "__main__":
     #     print(df[[column_name]].tail(10))
     #     pass
 
-    PARAMS = {
-    'crtfc_key': api_key, # API 인증키
-    'corp_code': '00126380', # 삼성전자 고유번호
-    'bsns_year': '2022', # 사업연도(4자리)
-    'reprt_code': '11013', # 사업보고서
-    }
+#     PARAMS = {
+#     'crtfc_key': api_key, # API 인증키
+#     'corp_code': '00126380', # 삼성전자 고유번호
+#     'bsns_year': '2022', # 사업연도(4자리)
+#     'reprt_code': '11013', # 사업보고서
+#     }
 
-    resp = requests.get(url = DART_URL_LIST['financial_statements'], params = PARAMS)
+#     resp = requests.get(url = DART_URL_LIST['financial_statements'], params = PARAMS)
 
-    # http 정상응답시 처리
-if resp.status_code == 200:
-  data_json = resp.json()
+#     # http 정상응답시 처리
+# if resp.status_code == 200:
+#   data_json = resp.json()
 
-  # OUTPUT
-  # data_str = json.dumps(data_json, indent=4, ensure_ascii=False)
-  # print(data_str)
+#   # OUTPUT
+#   # data_str = json.dumps(data_json, indent=4, ensure_ascii=False)
+#   # print(data_str)
 
-  if data_json['status'] == "000":
-    detail = data_json['list']
+#   if data_json['status'] == "000":
+#     detail = data_json['list']
     
-    # Json 코드 DataFrame으로 변환
-    df = pd.json_normalize(detail)
+#     # Json 코드 DataFrame으로 변환
+#     df = pd.json_normalize(detail)
 
-    for column_name in df.columns:
-        print(column_name)
-        # print(df[[column_name]])
-        pass
+#     for column_name in df.columns:
+#         print(column_name)
+#         # print(df[[column_name]])
+#         pass
 
-    # print(df)
-    #
-    df = df[['fs_div', 'fs_nm', 'sj_div', 'sj_nm', 'account_nm', 'thstrm_nm', 'thstrm_amount','thstrm_add_amount', 'frmtrm_nm', 'frmtrm_amount', 'frmtrm_add_amount']]
+#     # print(df)
+#     #
+#     df = df[['fs_div', 'fs_nm', 'sj_div', 'sj_nm', 'account_nm', 'thstrm_nm', 'thstrm_amount','thstrm_add_amount', 'frmtrm_nm', 'frmtrm_amount', 'frmtrm_add_amount']]
 
-    result = df.loc[(df.fs_div == 'OFS') & (df.sj_div == 'IS'),:]
-
-
-    is_df = { 'ofs' : df.loc[ (df.fs_div == 'OFS') & (df.sj_div == 'IS') ] ,
-              'cfs' : df.loc[ (df.fs_div == 'CFS') & (df.sj_div == 'IS') ] 
-    }
-
-    bs_df = { 'ofs' : df.loc[ (df.fs_div == 'OFS') & (df.sj_div == 'BS') ] ,
-              'cfs' : df.loc[ (df.fs_div == 'CFS') & (df.sj_div == 'BS') ] 
-    }
-
-    # is_df['cfs'].to_excel("is.xlsx")
-    # bs_df['cfs'].to_excel("bs.xlsx")
-
-    # print(bs_df['cfs'])
-
-    # print(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , ['thstrm_amount', 'frmtrm_amount'] ] )
-
-    print(sys.maxsize)
-
-    ths_jasan = int(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , 'thstrm_amount' ].iloc[0].replace(',', ''))
-    frm_jasan = int(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , 'frmtrm_amount' ].iloc[0].replace(',', ''))
-    ths_iik = int(is_df['cfs'].loc[ is_df['cfs'].account_nm == '당기순이익', 'thstrm_amount' ].iloc[0].replace(',', ''))
+#     result = df.loc[(df.fs_div == 'OFS') & (df.sj_div == 'IS'),:]
 
 
+#     is_df = { 'ofs' : df.loc[ (df.fs_div == 'OFS') & (df.sj_div == 'IS') ] ,
+#               'cfs' : df.loc[ (df.fs_div == 'CFS') & (df.sj_div == 'IS') ] 
+#     }
 
-    result_df = (ths_iik * 4)/ ((ths_jasan + frm_jasan) /2 ) * 100
+#     bs_df = { 'ofs' : df.loc[ (df.fs_div == 'OFS') & (df.sj_div == 'BS') ] ,
+#               'cfs' : df.loc[ (df.fs_div == 'CFS') & (df.sj_div == 'BS') ] 
+#     }
+
+#     # is_df['cfs'].to_excel("is.xlsx")
+#     # bs_df['cfs'].to_excel("bs.xlsx")
+
+#     # print(bs_df['cfs'])
+
+#     # print(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , ['thstrm_amount', 'frmtrm_amount'] ] )
+
+#     print(sys.maxsize)
+
+#     ths_jasan = int(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , 'thstrm_amount' ].iloc[0].replace(',', ''))
+#     frm_jasan = int(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , 'frmtrm_amount' ].iloc[0].replace(',', ''))
+#     ths_iik = int(is_df['cfs'].loc[ is_df['cfs'].account_nm == '당기순이익', 'thstrm_amount' ].iloc[0].replace(',', ''))
 
 
 
-    print(result_df)
-
-    #calculate ROA
-    '''
-    ROA = 당기순이익(연율화) / 총자산총계(평균 )
-
-    당기순이익(연율화)에서 당기순이익을 어떻게 연율화하였는지 구체적인 식을 알고 싶습니다
-      연율화는 해당 분기의 데이터를 1년 기간으로 맞춰주는 작업입니다.
-      당기순이익 * 연율화계수 (1Q:4, 2Q:2, 3Q:4/3, 4Q:1)
-      (예: 누적 1분기*4, 2분기*2, 3분기4/3, 4분기*1)
-    '''
-    df = pd.read_csv('20220527.txt', sep='\t', encoding='euc-kr' )
+#     result_df = (ths_iik * 4)/ ((ths_jasan + frm_jasan) /2 ) * 100
 
 
-    print(df.shape)
 
-    df.to_excel("result.xlsx")
+#     print(result_df)
+
+#     #calculate ROA
+#     '''
+#     ROA = 당기순이익(연율화) / 총자산총계(평균 )
+
+#     당기순이익(연율화)에서 당기순이익을 어떻게 연율화하였는지 구체적인 식을 알고 싶습니다
+#       연율화는 해당 분기의 데이터를 1년 기간으로 맞춰주는 작업입니다.
+#       당기순이익 * 연율화계수 (1Q:4, 2Q:2, 3Q:4/3, 4Q:1)
+#       (예: 누적 1분기*4, 2분기*2, 3분기4/3, 4분기*1)
+#     '''
+#     df = pd.read_csv('20220527.txt', sep='\t', encoding='euc-kr' )
 
 
+#     print(df.shape)
+
+#     df.to_excel("result.xlsx")
+#   else :
+#     print(data_json['message'])
+
+
+    header_str = 'sample/2022_1Q'
+    bs_df = getBS(header_str)
+    pl_df = getPL(header_str)
     print("done")
 
-  else :
-    print(data_json['message'])
 
 
 
