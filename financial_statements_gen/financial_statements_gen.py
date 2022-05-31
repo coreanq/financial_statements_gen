@@ -48,6 +48,27 @@ def getPL(header_string : str) -> pd.DataFrame:
   return df
   pass
 
+def getStockInfo(header_string : str) -> pd.DataFrame:
+  df = pd.read_excel( '{}_stock.xlsx'.format(header_string) )
+  # 불필요 열 삭제 
+  df.drop(['소속부', '대비', '등락률', '시가', '고가', '저가', '거래대금' ], axis='columns', inplace=True)
+  print(df.head(60))
+
+  # 필요데이터만 추출 
+  # 자산총계 - 부채 총계 ->  순자산 
+  # 자산총계/부채총계/자본금 
+  # regx 로 원하는 내용과 일치하는 데이터만 추출 
+  filter = df['시장구분'].str.match('^KOSPI$|^KOSDAQ$')
+  df = df[filter]
+  # 시가 총액 기준으로 정렬
+  df = df.sort_values(by=['시가총액']).head(500)
+  df = df.reset_index(drop=True)
+  print(df.shape, df.index, df.columns)
+
+  print(df.head(60))
+  return df
+
+
 if __name__ == "__main__":
 
     user_setting_json = []
@@ -152,6 +173,7 @@ if __name__ == "__main__":
     header_str = 'sample/2022_1Q'
     bs_df = getBS(header_str)
     pl_df = getPL(header_str)
+    stock_df = getStockInfo(header_str)
     print("done")
 
 
