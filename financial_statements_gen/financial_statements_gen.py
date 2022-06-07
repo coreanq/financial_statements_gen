@@ -81,6 +81,17 @@ def getStockInfo(header_string : str) -> pd.DataFrame:
   return df
 
 
+def calculatePBR():
+  pass
+
+def calculatePER():
+  '''
+  주가 / 주당순이익(EPS) 
+  '''
+  pass
+
+
+
 if __name__ == "__main__":
 
     user_setting_json = []
