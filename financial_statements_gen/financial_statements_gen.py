@@ -1,3 +1,4 @@
+from distutils.log import error
 import OpenDartReader
 import requests
 import pandas as pd
@@ -16,6 +17,9 @@ api_key = ''
 
 
 def getBS(header_string : str) -> pd.DataFrame:
+  '''
+  재무 상태표
+  '''
   df = pd.read_csv( '{}_BS.txt'.format(header_string), sep='\t', encoding='euc-kr' )
   # 불필요 열 삭제 
   df.drop(['재무제표종류', '시장구분', '업종', '업종명', '통화'], axis='columns', inplace=True)
@@ -28,35 +32,40 @@ def getBS(header_string : str) -> pd.DataFrame:
   filter = df['항목코드'].str.match('^ifrs-full_Assets$|^ifrs-full_Liabilities$|^ifrs-full_IssuedCapital$')
   df = df[filter]
   print(df.shape, df.index, df.columns)
-  print(df.head(60))
+  # print(df.head(60))
   return df
 
 
   pass
 
 def getPL(header_string : str) -> pd.DataFrame:
-  df = pd.read_csv( '{}_PL.txt'.format(header_string), sep='\t', encoding='euc-kr' )
+  '''
+  연결포괄손익계산서
+  포괄이 아니면 데이터가 누락되어 있음
+  기본주당이익(손실) 항목은 누락인 경우 있으므로 사용금지
+  매출액/매출원가/매출총이익만 봄
+
+  '''
+  df = pd.read_csv( '{}_PL.txt'.format(header_string), sep='\t', encoding='euc-kr', encoding_errors='replace' )
   # 불필요 열 삭제 
   df.drop(['재무제표종류', '시장구분', '업종', '업종명', '통화'], axis='columns', inplace=True)
-  print(df.head(50))
+  # print(df.head(50))
 
   # regx 로 원하는 내용과 일치하는 데이터만 추출 
-  filter = df['항목코드'].str.match('^ifrs-full_Revenue$|^ifrs-full_CostOfSales$|^ifrs-full_GrossProfit$|^ifrs-full_BasicEarningsLossPerShare$|^ifrs-full_BasicEarningsLossPerShareFromContinuingOperations$')
+  filter = df['항목코드'].str.match('^ifrs-full_Revenue$|^ifrs-full_CostOfSales$|^ifrs-full_GrossProfit$')
   df = df[filter]
   print(df.shape, df.index, df.columns)
   print(df.head(50))
   return df
   pass
 
-def getStockInfo(header_string : str) -> pd.DataFrame:
-  df = pd.read_excel( '{}_stock.xlsx'.format(header_string) )
+
+def getStockBasicInfo(header_string : str) -> pd.DataFrame:
+  df = pd.read_excel( '{}_stock_basic.xlsx'.format(header_string) )
   # 불필요 열 삭제 
   df.drop(['소속부', '대비', '등락률', '시가', '고가', '저가', '거래대금' ], axis='columns', inplace=True)
 
   # 필요데이터만 추출 
-  # 자산총계 - 부채 총계 ->  순자산 
-  # 자산총계/부채총계/자본금 
-  # regx 로 원하는 내용과 일치하는 데이터만 추출 
   filter = df['시장구분'].str.match('^KOSPI$|^KOSDAQ$')
   df = df[filter]
 
@@ -80,14 +89,55 @@ def getStockInfo(header_string : str) -> pd.DataFrame:
   print(df.head(60))
   return df
 
+def getStockDetailInfo(header_string : str) -> pd.DataFrame:
+  df = pd.read_excel( '{}_stock_detail.xlsx'.format(header_string) )
+  # 불필요 열 삭제 
+  df.drop(['대비', '등락률', '선행 EPS', '선행 PER'], axis='columns', inplace=True)
+
+  # 필요데이터만 추출 
+  # 스팩 제거 
+  filter = df['종목명'].str.contains('스팩')
+  df = df[~filter]
+
+  # 우선주 제거 
+  # ▷ 마지막 1자리는 보통주/우선주 구분
+  # 마지막 1자리는 종목구분코드입니다. 보통주는 0이 배정되고, 그 외 우선주 등 종류주식은 발생순서에 따라 K부터 순차적으로 부여합니다. Z 이후부터는 미부여된 알파벳을 다시 순차적으로 부여하는데, 이때 I, O, U는 제외합니다.
+  # 우선주의 종목구분코드 구분은 2013년을 기준으로 약간 달라졌습니다. 2013년 이전까지 우선주는 5부터 순차적으로 홀수를 배정받았습니다. 현재 볼 수 있는 대부분의 우선주 코드 끝자리가 5인 이유입니다.
+  # 2번째 우선주는 7, 3번째 우선주는 9가 각각 배정됩니다. 사이사이 짝수는 기존에 상장한 우선주의 신주발행 시 부여됩니다.
+  filter = df['종목코드'].str.endswith('0')
+  df = df[filter]
+
+  print(df.shape, df.index, df.columns)
+  print(df.head(60))
+  return df
+
 
 def calculatePBR():
   pass
 
-def calculatePER():
+def calculatePER(stock_data : pd.DataFrame, pl_data : pd.DataFrame) -> pd.Series:
   '''
-  주가 / 주당순이익(EPS) 
+  주가 / 주당순이익(EPS)
+  # 종목 코드 리스트만 별도로 가져옴
+  # 종목 코드 리스트를 통한 주가 및 주당 순이익 데이터 가져옴
+  # 위 데이터를 열로 만든 후 pd.DataSeries 로 추가 
   '''
+
+  stock_code_list = stock_data['종목코드']
+
+  result_list = []
+  print( len( stock_data['종목코드']))
+
+  for index, value in stock_data['종목코드'].items():
+    # print(value)
+    filter = pl_data['종목코드'].str.contains(value)
+    if( pl_data[filter].empty == False):
+      print(pl_data[filter])
+      # print(pl_data[filter])
+  
+  stock_data['PER'] = result_list
+
+
   pass
 
 
@@ -196,7 +246,10 @@ if __name__ == "__main__":
     header_str = 'sample/2022_1Q'
     bs_df = getBS(header_str)
     pl_df = getPL(header_str)
-    stock_df = getStockInfo(header_str)
+    stock_basic_df = getStockBasicInfo(header_str)
+    stock_detail_df = getStockDetailInfo(header_str)
+
+    # result_per = calculatePER(stock_basic_df, pl_df)
     print("done")
 
 
