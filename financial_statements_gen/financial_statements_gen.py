@@ -52,7 +52,6 @@ def getStockInfo(header_string : str) -> pd.DataFrame:
   df = pd.read_excel( '{}_stock.xlsx'.format(header_string) )
   # 불필요 열 삭제 
   df.drop(['소속부', '대비', '등락률', '시가', '고가', '저가', '거래대금' ], axis='columns', inplace=True)
-  print(df.head(60))
 
   # 필요데이터만 추출 
   # 자산총계 - 부채 총계 ->  순자산 
@@ -60,6 +59,19 @@ def getStockInfo(header_string : str) -> pd.DataFrame:
   # regx 로 원하는 내용과 일치하는 데이터만 추출 
   filter = df['시장구분'].str.match('^KOSPI$|^KOSDAQ$')
   df = df[filter]
+
+  # 스팩 제거 
+  filter = df['종목명'].str.contains('스팩')
+  df = df[~filter]
+
+  # 우선주 제거 
+  # ▷ 마지막 1자리는 보통주/우선주 구분
+  # 마지막 1자리는 종목구분코드입니다. 보통주는 0이 배정되고, 그 외 우선주 등 종류주식은 발생순서에 따라 K부터 순차적으로 부여합니다. Z 이후부터는 미부여된 알파벳을 다시 순차적으로 부여하는데, 이때 I, O, U는 제외합니다.
+  # 우선주의 종목구분코드 구분은 2013년을 기준으로 약간 달라졌습니다. 2013년 이전까지 우선주는 5부터 순차적으로 홀수를 배정받았습니다. 현재 볼 수 있는 대부분의 우선주 코드 끝자리가 5인 이유입니다.
+  # 2번째 우선주는 7, 3번째 우선주는 9가 각각 배정됩니다. 사이사이 짝수는 기존에 상장한 우선주의 신주발행 시 부여됩니다.
+  filter = df['종목코드'].str.endswith('0')
+  df = df[filter]
+
   # 시가 총액 기준으로 정렬
   df = df.sort_values(by=['시가총액']).head(500)
   df = df.reset_index(drop=True)
