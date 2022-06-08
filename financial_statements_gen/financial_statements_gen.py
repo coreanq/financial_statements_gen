@@ -166,134 +166,61 @@ if __name__ == "__main__":
     dart = OpenDartReader(api_key) 
 
 
-    # == 1. 공시정보 검색 ==
-    # df = dart.finstate_all('00126380', 2021, reprt_code='11013', fs_div="CFS")
-
-    # for column_name in df.columns:
-    #     print(column_name)
-    #     print(df[[column_name]].tail(10))
-    #     pass
-
-#     PARAMS = {
-#     'crtfc_key': api_key, # API 인증키
-#     'corp_code': '00126380', # 삼성전자 고유번호
-#     'bsns_year': '2022', # 사업연도(4자리)
-#     'reprt_code': '11013', # 사업보고서
-#     }
-
-#     resp = requests.get(url = DART_URL_LIST['financial_statements'], params = PARAMS)
-
-#     # http 정상응답시 처리
-# if resp.status_code == 200:
-#   data_json = resp.json()
-
-#   # OUTPUT
-#   # data_str = json.dumps(data_json, indent=4, ensure_ascii=False)
-#   # print(data_str)
-
-#   if data_json['status'] == "000":
-#     detail = data_json['list']
-    
-#     # Json 코드 DataFrame으로 변환
-#     df = pd.json_normalize(detail)
-
-#     for column_name in df.columns:
-#         print(column_name)
-#         # print(df[[column_name]])
-#         pass
-
-#     # print(df)
-#     #
-#     df = df[['fs_div', 'fs_nm', 'sj_div', 'sj_nm', 'account_nm', 'thstrm_nm', 'thstrm_amount','thstrm_add_amount', 'frmtrm_nm', 'frmtrm_amount', 'frmtrm_add_amount']]
-
-#     result = df.loc[(df.fs_div == 'OFS') & (df.sj_div == 'IS'),:]
-
-
-#     is_df = { 'ofs' : df.loc[ (df.fs_div == 'OFS') & (df.sj_div == 'IS') ] ,
-#               'cfs' : df.loc[ (df.fs_div == 'CFS') & (df.sj_div == 'IS') ] 
-#     }
-
-#     bs_df = { 'ofs' : df.loc[ (df.fs_div == 'OFS') & (df.sj_div == 'BS') ] ,
-#               'cfs' : df.loc[ (df.fs_div == 'CFS') & (df.sj_div == 'BS') ] 
-#     }
-
-#     # is_df['cfs'].to_excel("is.xlsx")
-#     # bs_df['cfs'].to_excel("bs.xlsx")
-
-#     # print(bs_df['cfs'])
-
-#     # print(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , ['thstrm_amount', 'frmtrm_amount'] ] )
-
-#     print(sys.maxsize)
-
-#     ths_jasan = int(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , 'thstrm_amount' ].iloc[0].replace(',', ''))
-#     frm_jasan = int(bs_df['cfs'].loc[ bs_df['cfs'].account_nm == '자산총계' , 'frmtrm_amount' ].iloc[0].replace(',', ''))
-#     ths_iik = int(is_df['cfs'].loc[ is_df['cfs'].account_nm == '당기순이익', 'thstrm_amount' ].iloc[0].replace(',', ''))
-
-
-
-#     result_df = (ths_iik * 4)/ ((ths_jasan + frm_jasan) /2 ) * 100
-
-
-
-#     print(result_df)
-
-#     #calculate ROA
-#     '''
-#     ROA = 당기순이익(연율화) / 총자산총계(평균 )
-
-#     당기순이익(연율화)에서 당기순이익을 어떻게 연율화하였는지 구체적인 식을 알고 싶습니다
-#       연율화는 해당 분기의 데이터를 1년 기간으로 맞춰주는 작업입니다.
-#       당기순이익 * 연율화계수 (1Q:4, 2Q:2, 3Q:4/3, 4Q:1)
-#       (예: 누적 1분기*4, 2분기*2, 3분기4/3, 4분기*1)
-#     '''
-#     df = pd.read_csv('20220527.txt', sep='\t', encoding='euc-kr' )
-
-
-#     print(df.shape)
 
 #     df.to_excel("result.xlsx")
 #   else :
 #     print(data_json['message'])
 
 
-    header_str = 'sample/2022_1Q'
-    bs_df = getBS(header_str)
-    pl_df = getPL(header_str)
-    stock_basic_df = getStockBasicInfo(header_str)
-    stock_detail_df = getStockDetailInfo(header_str)
+    current_info_header = 'sample/2022_1Q'
+    previous_info_header = 'sample/2021_4Q'
+
+    current_bs_df = getBS(current_info_header)
+    current_pl_df = getPL(current_info_header)
+
+    previous_bs_df = getBS(previous_info_header)
+    previous_pl_df = getPL(previous_info_header)
+
+    stock_basic_df = getStockBasicInfo(current_info_header)
+    stock_detail_df = getStockDetailInfo(current_info_header)
 
 
     # merge 주식 정보 
+
+    #######################################################################################3
+    # 시가 총액 컬럼 추가 
+    # 시가 총액의 경우 공시 정보가 아니기 때문에 누락이 없음 
     additional_stock_info_list = []
     delete_indexes = []
     column_name = '시가총액'
 
-    # 시가 총액 컬럼 추가 
+    src_df = stock_basic_df
     for index, value in stock_detail_df['종목코드'].iteritems():
-        src_df = stock_basic_df
 
         temp_df = src_df[ src_df['종목코드'].str.contains(value) ]
         if( len(temp_df) != 0 ):
             additional_stock_info_list.append( temp_df.iloc[0]['시가총액'] )
         else:
+            print("시가총액 누락 종목 {}".format( value ))
             # 기본정보에 없는 코드 삭제 
             delete_indexes.append( index )
+
 
     stock_detail_df.drop( stock_detail_df.index[ delete_indexes ], inplace=True )
     stock_detail_df.reset_index(drop=True)
 
     stock_detail_df[column_name] = additional_stock_info_list
-    print( len(stock_detail_df), stock_detail_df.head(10) )
+    print( len(stock_detail_df), stock_detail_df.head(20) )
 
 
     #######################################################################################3
+    # 매출액 컬럼 추가 
+    # 공시 정보 누락으로 인해 없는 경우 이전 데이터에서 가져와야 함 
     additional_stock_info_list = []
     delete_indexes = []
     column_name = '매출액'
 
-    # 매출액 컬럼 추가 
-    src_df = pl_df
+    src_df = current_pl_df
     for index, value in stock_detail_df['종목코드'].iteritems():
         temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_Revenue') )  ]
         # print(temp_df.head(10))
@@ -301,8 +228,16 @@ if __name__ == "__main__":
         if( len(temp_df) != 0 ):
             additional_stock_info_list.append( temp_df.iloc[0]['당기 1분기 3개월'] )
         else:
-            # 기본정보에 없는 코드 삭제 
-            delete_indexes.append( index )
+            previous_df = previous_pl_df
+            temp_df = previous_df[ (previous_df['종목코드'].str.contains(value)) & (previous_df['항목코드'].str.contains('ifrs-full_Revenue') )  ]
+            # 기본정보에 없는 경우 이전 자료 searching 
+
+            if( len(temp_df) != 0 ):
+                # 컬럼 이름이 포함된 index 를 찾아 cell 값을 찾는다 
+                additional_stock_info_list.append( temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기 3개월') ])
+            else:
+                print("매출액 누락 종목 {}".format( value ))
+                delete_indexes.append( index )
 
     stock_detail_df.drop( stock_detail_df.index[ delete_indexes ], inplace=True )
     stock_detail_df.reset_index(drop=True)
@@ -312,23 +247,30 @@ if __name__ == "__main__":
     print( len(stock_detail_df), stock_detail_df.head(10) )
 
     #######################################################################################3
+    # 매출총이익 컬럼 추가 
+    # 공시 정보 누락으로 인해 없는 경우 이전 데이터에서 가져와야 함 
     additional_stock_info_list = []
     delete_indexes = []
     column_name = '매출총이익'
 
-    # 매출총이익 컬럼 추가 
-    src_df = pl_df
+    src_df = current_pl_df
     for index, value in stock_detail_df['종목코드'].iteritems():
-        temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_GrossProfit') )  ]
-        print(temp_df.head(10))
-        # temp_df = temp_df[ temp_df['항목코드'] == 'ifrs-full_GrossProfit']
+        temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_grossProfit') )  ]
         # print(temp_df.head(10))
 
         if( len(temp_df) != 0 ):
             additional_stock_info_list.append( temp_df.iloc[0]['당기 1분기 3개월'] )
         else:
-            # 기본정보에 없는 코드 삭제 
-            delete_indexes.append( index )
+            previous_df = previous_pl_df
+            temp_df = previous_df[ (previous_df['종목코드'].str.contains(value)) & (previous_df['항목코드'].str.contains('ifrs-full_grossProfit') )  ]
+            # 기본정보에 없는 경우 이전 자료 searching 
+
+            if( len(temp_df) != 0 ):
+                # 컬럼 이름이 포함된 index 를 찾아 cell 값을 찾는다 
+                additional_stock_info_list.append( temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기 3개월') ])
+            else:
+                print("매출총이익 누락 종목 {}".format( value ))
+                delete_indexes.append( index )
 
     stock_detail_df.drop( stock_detail_df.index[ delete_indexes ], inplace=True )
     stock_detail_df.reset_index(drop=True)
