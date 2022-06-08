@@ -31,6 +31,7 @@ def getBS(header_string : str) -> pd.DataFrame:
   # regx 로 원하는 내용과 일치하는 데이터만 추출 
   filter = df['항목코드'].str.match('^ifrs-full_Assets$|^ifrs-full_Liabilities$|^ifrs-full_IssuedCapital$')
   df = df[filter]
+  df = df.reset_index(drop=True)
   print(df.shape, df.index, df.columns)
   # print(df.head(60))
   return df
@@ -54,6 +55,7 @@ def getPL(header_string : str) -> pd.DataFrame:
   # regx 로 원하는 내용과 일치하는 데이터만 추출 
   filter = df['항목코드'].str.match('^ifrs-full_Revenue$|^ifrs-full_CostOfSales$|^ifrs-full_GrossProfit$')
   df = df[filter]
+  df = df.reset_index(drop=True)
   print(df.shape, df.index, df.columns)
   print(df.head(50))
   return df
@@ -81,18 +83,19 @@ def getStockBasicInfo(header_string : str) -> pd.DataFrame:
   filter = df['종목코드'].str.endswith('0')
   df = df[filter]
 
-  # 시가 총액 기준으로 정렬
-  df = df.sort_values(by=['시가총액']).head(500)
-  df = df.reset_index(drop=True)
+  df = df[['종목코드', '거래량', '시가총액', '상장주식수']]
   print(df.shape, df.index, df.columns)
-
   print(df.head(60))
+
+  # 시가 총액 기준으로 정렬
+  # df = df.sort_values(by=['시가총액'])
+  # df = df.reset_index(drop=True)
   return df
 
 def getStockDetailInfo(header_string : str) -> pd.DataFrame:
   df = pd.read_excel( '{}_stock_detail.xlsx'.format(header_string) )
   # 불필요 열 삭제 
-  df.drop(['대비', '등락률', '선행 EPS', '선행 PER'], axis='columns', inplace=True)
+  df.drop(['대비', '등락률', '선행 EPS', '선행 PER', '주당배당금', '배당수익률'], axis='columns', inplace=True)
 
   # 필요데이터만 추출 
   # 스팩 제거 
@@ -107,6 +110,17 @@ def getStockDetailInfo(header_string : str) -> pd.DataFrame:
   filter = df['종목코드'].str.endswith('0')
   df = df[filter]
 
+  print(df.shape, df.index, df.columns)
+
+  df = df[df['EPS'] != '-']
+
+  df = df[df['PER'] != '-']
+
+  df = df[df['BPS'] != '-']
+
+  df = df[df['PBR'] != '-']
+
+  df = df.reset_index(drop=True)
   print(df.shape, df.index, df.columns)
   print(df.head(60))
   return df
@@ -249,7 +263,27 @@ if __name__ == "__main__":
     stock_basic_df = getStockBasicInfo(header_str)
     stock_detail_df = getStockDetailInfo(header_str)
 
-    # result_per = calculatePER(stock_basic_df, pl_df)
+
+    # merge 주식 정보 
+    additional_stock_info_list = []
+    delete_indexes = []
+
+    for index, value in stock_detail_df['종목코드'].iteritems():
+        temp_df = stock_basic_df[ stock_basic_df['종목코드'].str.contains(value) ]
+        if( len(temp_df) != 0 ):
+            additional_stock_info_list.append( temp_df.iloc[0]['시가총액'] )
+        else:
+            # 기본정보에 없는 코드 삭제 
+            delete_indexes.append( index )
+
+    for index in delete_indexes:
+        stock_detail_df.drop( stock_detail_df.index[ index ], inplace=True )
+
+    print( len(stock_detail_df) )
+
+    stock_detail_df['시가총액'] = additional_stock_info_list
+    print(stock_detail_df.head(10))
+
     print("done")
 
 
