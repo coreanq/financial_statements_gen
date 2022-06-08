@@ -267,22 +267,75 @@ if __name__ == "__main__":
     # merge 주식 정보 
     additional_stock_info_list = []
     delete_indexes = []
+    column_name = '시가총액'
 
+    # 시가 총액 컬럼 추가 
     for index, value in stock_detail_df['종목코드'].iteritems():
-        temp_df = stock_basic_df[ stock_basic_df['종목코드'].str.contains(value) ]
+        src_df = stock_basic_df
+
+        temp_df = src_df[ src_df['종목코드'].str.contains(value) ]
         if( len(temp_df) != 0 ):
             additional_stock_info_list.append( temp_df.iloc[0]['시가총액'] )
         else:
             # 기본정보에 없는 코드 삭제 
             delete_indexes.append( index )
 
-    for index in delete_indexes:
-        stock_detail_df.drop( stock_detail_df.index[ index ], inplace=True )
+    stock_detail_df.drop( stock_detail_df.index[ delete_indexes ], inplace=True )
+    stock_detail_df.reset_index(drop=True)
 
-    print( len(stock_detail_df) )
+    stock_detail_df[column_name] = additional_stock_info_list
+    print( len(stock_detail_df), stock_detail_df.head(10) )
 
-    stock_detail_df['시가총액'] = additional_stock_info_list
-    print(stock_detail_df.head(10))
+
+    #######################################################################################3
+    additional_stock_info_list = []
+    delete_indexes = []
+    column_name = '매출액'
+
+    # 매출액 컬럼 추가 
+    src_df = pl_df
+    for index, value in stock_detail_df['종목코드'].iteritems():
+        temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_Revenue') )  ]
+        # print(temp_df.head(10))
+
+        if( len(temp_df) != 0 ):
+            additional_stock_info_list.append( temp_df.iloc[0]['당기 1분기 3개월'] )
+        else:
+            # 기본정보에 없는 코드 삭제 
+            delete_indexes.append( index )
+
+    stock_detail_df.drop( stock_detail_df.index[ delete_indexes ], inplace=True )
+    stock_detail_df.reset_index(drop=True)
+
+    stock_detail_df[column_name] = additional_stock_info_list
+
+    print( len(stock_detail_df), stock_detail_df.head(10) )
+
+    #######################################################################################3
+    additional_stock_info_list = []
+    delete_indexes = []
+    column_name = '매출총이익'
+
+    # 매출총이익 컬럼 추가 
+    src_df = pl_df
+    for index, value in stock_detail_df['종목코드'].iteritems():
+        temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_GrossProfit') )  ]
+        print(temp_df.head(10))
+        # temp_df = temp_df[ temp_df['항목코드'] == 'ifrs-full_GrossProfit']
+        # print(temp_df.head(10))
+
+        if( len(temp_df) != 0 ):
+            additional_stock_info_list.append( temp_df.iloc[0]['당기 1분기 3개월'] )
+        else:
+            # 기본정보에 없는 코드 삭제 
+            delete_indexes.append( index )
+
+    stock_detail_df.drop( stock_detail_df.index[ delete_indexes ], inplace=True )
+    stock_detail_df.reset_index(drop=True)
+
+    stock_detail_df[column_name] = additional_stock_info_list
+    print( len(stock_detail_df), stock_detail_df.head(10) )
+
 
     print("done")
 
