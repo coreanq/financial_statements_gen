@@ -306,13 +306,24 @@ if __name__ == "__main__":
 
 
     ####################################################################################
-
     print( len(stock_detail_df), stock_detail_df.head(10) )
+
     stock_detail_df.to_excel("result_before_drop.xlsx")
 
     stock_detail_df.dropna(inplace=True)
-    stock_detail_df.reset_index(inplace=True)
 
+
+    # PSR calculate
+    # 시가 총액 / 매출 
+    stock_detail_df['PSR'] = stock_detail_df['시가총액'] / stock_detail_df['매출액']
+
+    #GP/A calculate
+    # 매출 총이익 / 총 자산 
+    stock_detail_df['GP/A'] = stock_detail_df['매출총이익'] / stock_detail_df['자산']
+
+    stock_detail_df.sort_values( by =['시가총액', 'PBR', 'PER', 'PSR', 'GP/A' ], inplace=True)
+
+    stock_detail_df.reset_index(inplace=True)
     stock_detail_df.to_excel("result.xlsx")
 
     print("done")
