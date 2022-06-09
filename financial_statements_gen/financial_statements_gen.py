@@ -1,19 +1,9 @@
 from distutils.log import error
-import OpenDartReader
-import requests
 import pandas as pd
 import json,sys
 import numpy as np
 
 __vserion__  = "0.1.0"
-
-
-
-DART_URL_LIST = {
-    "financial_statements": "https://opendart.fss.or.kr/api/fnlttSinglAcnt.json"
-}
-
-api_key = ''
 
 
 def getBS(header_string : str) -> pd.DataFrame:
@@ -126,42 +116,7 @@ def getStockDetailInfo(header_string : str) -> pd.DataFrame:
   return df
 
 
-def calculatePBR():
-  pass
-
-def calculatePER(stock_data : pd.DataFrame, pl_data : pd.DataFrame) -> pd.Series:
-  '''
-  주가 / 주당순이익(EPS)
-  # 종목 코드 리스트만 별도로 가져옴
-  # 종목 코드 리스트를 통한 주가 및 주당 순이익 데이터 가져옴
-  # 위 데이터를 열로 만든 후 pd.DataSeries 로 추가 
-  '''
-
-  stock_code_list = stock_data['종목코드']
-
-  result_list = []
-  print( len( stock_data['종목코드']))
-
-  for index, value in stock_data['종목코드'].items():
-    # print(value)
-    filter = pl_data['종목코드'].str.contains(value)
-    if( pl_data[filter].empty == False):
-      print(pl_data[filter])
-      # print(pl_data[filter])
-  
-  stock_data['PER'] = result_list
-
-
-  pass
-
 if __name__ == "__main__":
-
-    user_setting_json = []
-    with open(r"financial_statements_gen\user_setting.json", "r") as json_file:
-        user_setting_json = json.load(json_file)
-
-    api_key = user_setting_json['api_key']
-    dart = OpenDartReader(api_key) 
 
     info_header = 'sample/2022_1Q'
 
@@ -177,6 +132,8 @@ if __name__ == "__main__":
 
     # merge 주식 정보 
 
+    iterate_stock_list = stock_detail_df['종목코드'].tolist() 
+
     #######################################################################################3
     # 시가 총액 컬럼 추가 
     # 시가 총액의 경우 공시 정보가 아니기 때문에 누락이 없음 
@@ -184,7 +141,7 @@ if __name__ == "__main__":
     column_name = '시가총액'
 
     src_df = stock_basic_df
-    for index, value in stock_detail_df['종목코드'].iteritems():
+    for value in iterate_stock_list:
 
         temp_df = src_df[ src_df['종목코드'].str.contains(value) ]
         if( len(temp_df) != 0 ):
@@ -207,7 +164,7 @@ if __name__ == "__main__":
     src_df = continue_pl_df
     alternate_df = separate_pl_df
 
-    for index, value in stock_detail_df['종목코드'].iteritems():
+    for value in iterate_stock_list:
         temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_Revenue') )  ]
         # print(temp_df.head(10))
 
@@ -244,7 +201,7 @@ if __name__ == "__main__":
     src_df = continue_pl_df
     alternate_df = separate_pl_df
 
-    for index, value in stock_detail_df['종목코드'].iteritems():
+    for value in iterate_stock_list:
         temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_GrossProfit') )  ]
         # print(temp_df.head(10))
 
@@ -278,7 +235,7 @@ if __name__ == "__main__":
     src_df = continue_bs_df
     alternate_df = separate_bs_df
 
-    for index, value in stock_detail_df['종목코드'].iteritems():
+    for value in iterate_stock_list:
         temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_EquityAndLiabilities|ifrs-full_Assets') )  ]
         # print(temp_df.head(10))
 

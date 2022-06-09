@@ -6,11 +6,11 @@ authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-OpenDartReader = "^0.1.6"
 bs4 = "^0.0.1"
 ipykernel = "^6.13.0"
 requests = "^2.27.1"
 openpyxl = "^3.0.10"
+pandas = "^1.4.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
