@@ -190,7 +190,6 @@ if __name__ == "__main__":
     # 시가 총액 컬럼 추가 
     # 시가 총액의 경우 공시 정보가 아니기 때문에 누락이 없음 
     additional_stock_info_list = []
-    delete_indexes = []
     column_name = '시가총액'
 
     src_df = stock_basic_df
@@ -202,21 +201,17 @@ if __name__ == "__main__":
         else:
             print("시가총액 누락 종목 {}".format( value ))
             # 기본정보에 없는 코드 삭제 
-            delete_indexes.append( index )
-
-
-    stock_detail_df.drop( stock_detail_df.index[ delete_indexes ], inplace=True )
-    stock_detail_df.reset_index(drop=True)
+            additional_stock_info_list.append( np.nan )
 
     stock_detail_df[column_name] = additional_stock_info_list
-    print( len(stock_detail_df), stock_detail_df.head(20) )
+
+    # print( len(stock_detail_df), stock_detail_df.head(20) )
 
 
     #######################################################################################3
     # 매출액 컬럼 추가 
     # 공시 정보 누락으로 인해 없는 경우 이전 데이터에서 가져와야 함 
     additional_stock_info_list = []
-    delete_indexes = []
     column_name = '매출액'
 
     src_df = continue_pl_df
@@ -235,21 +230,17 @@ if __name__ == "__main__":
                 # 컬럼 이름이 포함된 index 를 찾아 cell 값을 찾는다 
                 additional_stock_info_list.append( temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기 3개월') ])
             else:
-                print("매출액 누락 종목 {}".format( value ))
-                delete_indexes.append( index )
-
-    stock_detail_df.drop( stock_detail_df.index[ delete_indexes ], inplace=True )
-    stock_detail_df.reset_index(drop=True)
+                # print("매출액 누락 종목 {}".format( value ))
+                additional_stock_info_list.append( np.nan )
 
     stock_detail_df[column_name] = additional_stock_info_list
 
-    print( len(stock_detail_df), stock_detail_df.head(10) )
+    # print( len(stock_detail_df), stock_detail_df.head(10) )
 
     #######################################################################################3
     # 매출총이익 컬럼 추가 
     # 공시 정보 누락으로 인해 없는 경우 이전 데이터에서 가져와야 함 
     additional_stock_info_list = []
-    delete_indexes = []
     column_name = '매출총이익'
 
     src_df = continue_pl_df
@@ -268,15 +259,16 @@ if __name__ == "__main__":
                 # 컬럼 이름이 포함된 index 를 찾아 cell 값을 찾는다 
                 additional_stock_info_list.append( temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기 3개월') ])
             else:
-                print("매출총이익 누락 종목 {}".format( value ))
-                delete_indexes.append( index )
+                # print("매출총이익 누락 종목 {}".format( value ))
+                additional_stock_info_list.append( np.nan )
 
-    stock_detail_df.drop( stock_detail_df.index[ delete_indexes ], inplace=True )
-    stock_detail_df.reset_index(drop=True)
 
     stock_detail_df[column_name] = additional_stock_info_list
-    print( len(stock_detail_df), stock_detail_df.head(10) )
+    # stock_detail_df.dropna(inplace=True)
+    # stock_detail_df.reset_index(drop=True)
 
+    print( len(stock_detail_df), stock_detail_df.head(10) )
+    stock_detail_df.to_excel("result.xlsx")
 
     print("done")
 
