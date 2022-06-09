@@ -7,118 +7,131 @@ __vserion__  = "0.1.0"
 
 
 def getBS(header_string : str) -> pd.DataFrame:
-  '''
-  재무 상태표
-  '''
-  df = pd.read_csv( '{}_BS.txt'.format(header_string), sep='\t', encoding='utf-8' )
-  # 불필요 열 삭제 
-  df.drop(['재무제표종류', '시장구분', '업종', '업종명', '통화'], axis='columns', inplace=True)
-  # print(df.head(60))
+    '''
+    재무 상태표
+    '''
+    df = pd.read_csv( '{}_BS.txt'.format(header_string), sep='\t', encoding='utf-8' )
+    # 불필요 열 삭제 
+    df.drop(['재무제표종류', '시장구분', '업종', '업종명', '통화'], axis='columns', inplace=True)
+    # print(df.head(30))
 
-  # 필요데이터만 추출 
-  # 자산총계 - 부채 총계 ->  순자산 
-  # 자산총계/부채총계/자본금 
-  # regx 로 원하는 내용과 일치하는 데이터만 추출 
-  filter = df['항목코드'].str.match('^ifrs-full_Assets$|^ifrs-full_Liabilities$|^ifrs-full_IssuedCapital$')
-  df = df[filter]
-  df = df.reset_index(drop=True)
-  print(df.shape, df.index, df.columns)
-  # print(df.head(60))
-  return df
-
-
-  pass
+    # 필요데이터만 추출 
+    # 자산총계 - 부채 총계 ->  순자산 
+    # 자산총계/부채총계/자본금 
+    # regx 로 원하는 내용과 일치하는 데이터만 추출 
+    filter = df['항목코드'].str.match('^ifrs-full_Assets$|^ifrs-full_Liabilities$|^ifrs-full_IssuedCapital$')
+    df = df[filter]
+    df.reset_index(inplace=True, drop=True)
+    print(df.shape, df.columns)
+    # print(df.head(30))
+    return df
 
 def getPL(header_string : str) -> pd.DataFrame:
-  '''
-  연결포괄손익계산서
-  포괄이 아니면 데이터가 누락되어 있음
-  기본주당이익(손실) 항목은 누락인 경우 있으므로 사용금지
-  매출액/매출원가/매출총이익만 봄
+    '''
+    포괄손익계산서
+    기본주당이익(손실) 항목은 누락인 경우 있으므로 사용금지
+    매출액/매출원가/매출총이익만 봄
 
-  '''
-  df = pd.read_csv( '{}_PL.txt'.format(header_string), sep='\t', encoding='utf-8', encoding_errors='replace' )
-  # 불필요 열 삭제 
-  df.drop(['재무제표종류', '시장구분', '업종', '업종명', '통화'], axis='columns', inplace=True)
-  # print(df.head(50))
+    '''
+    df = pd.read_csv( '{}_PL.txt'.format(header_string), sep='\t', encoding='utf-8', encoding_errors='replace' )
+    # 불필요 열 삭제 
+    df.drop(['재무제표종류', '시장구분', '업종', '업종명', '통화'], axis='columns', inplace=True)
+    # print(df.head(30))
 
-  # regx 로 원하는 내용과 일치하는 데이터만 추출 
-  filter = df['항목코드'].str.match('^ifrs-full_Revenue$|^ifrs-full_CostOfSales$|^ifrs-full_GrossProfit$')
-  df = df[filter]
-  df = df.reset_index(drop=True)
-  print(df.shape, df.index, df.columns)
-  print(df.head(50))
-  return df
-  pass
+    # regx 로 원하는 내용과 일치하는 데이터만 추출 
+    filter = df['항목코드'].str.match('^ifrs-full_Revenue$|^ifrs-full_CostOfSales$|^ifrs-full_GrossProfit$')
+    df = df[filter]
+    df.reset_index(inplace=True, drop=True)
+    print(df.shape, df.columns)
+    print(df.head(30))
+    return df
+    pass
 
 
 def getStockBasicInfo(header_string : str) -> pd.DataFrame:
-  df = pd.read_excel( '{}_stock_basic.xlsx'.format(header_string) )
-  # 불필요 열 삭제 
-  df.drop(['소속부', '대비', '등락률', '시가', '고가', '저가', '거래대금' ], axis='columns', inplace=True)
+    df = pd.read_excel( '{}_stock_basic.xlsx'.format(header_string) )
+    # 불필요 열 삭제 
+    df.drop(['소속부', '대비', '등락률', '시가', '고가', '저가', '거래대금' ], axis='columns', inplace=True)
 
-  # 필요데이터만 추출 
-  filter = df['시장구분'].str.match('^KOSPI$|^KOSDAQ$')
-  df = df[filter]
+    # 필요데이터만 추출 
+    filter = df['시장구분'].str.match('^KOSPI$|^KOSDAQ$')
+    df = df[filter]
 
-  # 스팩 제거 
-  filter = df['종목명'].str.contains('스팩')
-  df = df[~filter]
+    # 스팩 제거 
+    filter = df['종목명'].str.contains('스팩')
+    df = df[~filter]
 
-  # 우선주 제거 
-  # ▷ 마지막 1자리는 보통주/우선주 구분
-  # 마지막 1자리는 종목구분코드입니다. 보통주는 0이 배정되고, 그 외 우선주 등 종류주식은 발생순서에 따라 K부터 순차적으로 부여합니다. Z 이후부터는 미부여된 알파벳을 다시 순차적으로 부여하는데, 이때 I, O, U는 제외합니다.
-  # 우선주의 종목구분코드 구분은 2013년을 기준으로 약간 달라졌습니다. 2013년 이전까지 우선주는 5부터 순차적으로 홀수를 배정받았습니다. 현재 볼 수 있는 대부분의 우선주 코드 끝자리가 5인 이유입니다.
-  # 2번째 우선주는 7, 3번째 우선주는 9가 각각 배정됩니다. 사이사이 짝수는 기존에 상장한 우선주의 신주발행 시 부여됩니다.
-  filter = df['종목코드'].str.endswith('0')
-  df = df[filter]
+    # 우선주 제거 
+    # ▷ 마지막 1자리는 보통주/우선주 구분
+    # 마지막 1자리는 종목구분코드입니다. 보통주는 0이 배정되고, 그 외 우선주 등 종류주식은 발생순서에 따라 K부터 순차적으로 부여합니다. Z 이후부터는 미부여된 알파벳을 다시 순차적으로 부여하는데, 이때 I, O, U는 제외합니다.
+    # 우선주의 종목구분코드 구분은 2013년을 기준으로 약간 달라졌습니다. 2013년 이전까지 우선주는 5부터 순차적으로 홀수를 배정받았습니다. 현재 볼 수 있는 대부분의 우선주 코드 끝자리가 5인 이유입니다.
+    # 2번째 우선주는 7, 3번째 우선주는 9가 각각 배정됩니다. 사이사이 짝수는 기존에 상장한 우선주의 신주발행 시 부여됩니다.
+    filter = df['종목코드'].str.endswith('0')
+    df = df[filter]
 
-  df = df[['종목코드', '거래량', '시가총액', '상장주식수']]
-  print(df.shape, df.index, df.columns)
-  print(df.head(60))
+    df = df[['종목코드', '거래량', '시가총액', '상장주식수']]
+    print(df.shape, df.columns)
+    print(df.head(30))
 
-  # 시가 총액 기준으로 정렬
-  # df = df.sort_values(by=['시가총액'])
-  # df = df.reset_index(drop=True)
-  return df
+    return df
 
-def getStockDetailInfo(header_string : str) -> pd.DataFrame:
-  df = pd.read_excel( '{}_stock_detail.xlsx'.format(header_string) )
-  # 불필요 열 삭제 
-  df.drop(['대비', '등락률', '선행 EPS', '선행 PER', '주당배당금', '배당수익률'], axis='columns', inplace=True)
+def getStockDetailInfo(header_string : str, tradable_stock_code_list : list[str]) -> pd.DataFrame:
+    df = pd.read_excel( '{}_stock_detail.xlsx'.format(header_string) )
+    # 불필요 열 삭제 
+    df.drop(['대비', '등락률', '선행 EPS', '선행 PER', '주당배당금', '배당수익률'], axis='columns', inplace=True)
 
-  # 필요데이터만 추출 
-  # 스팩 제거 
-  filter = df['종목명'].str.contains('스팩')
-  df = df[~filter]
+    # 필요데이터만 추출 
+    # 스팩 제거 
+    filter = df['종목명'].str.contains('스팩')
+    df = df[~filter]
 
-  # 우선주 제거 
-  # ▷ 마지막 1자리는 보통주/우선주 구분
-  # 마지막 1자리는 종목구분코드입니다. 보통주는 0이 배정되고, 그 외 우선주 등 종류주식은 발생순서에 따라 K부터 순차적으로 부여합니다. Z 이후부터는 미부여된 알파벳을 다시 순차적으로 부여하는데, 이때 I, O, U는 제외합니다.
-  # 우선주의 종목구분코드 구분은 2013년을 기준으로 약간 달라졌습니다. 2013년 이전까지 우선주는 5부터 순차적으로 홀수를 배정받았습니다. 현재 볼 수 있는 대부분의 우선주 코드 끝자리가 5인 이유입니다.
-  # 2번째 우선주는 7, 3번째 우선주는 9가 각각 배정됩니다. 사이사이 짝수는 기존에 상장한 우선주의 신주발행 시 부여됩니다.
-  filter = df['종목코드'].str.endswith('0')
-  df = df[filter]
+    # 우선주 제거 
+    # ▷ 마지막 1자리는 보통주/우선주 구분
+    # 마지막 1자리는 종목구분코드입니다. 보통주는 0이 배정되고, 그 외 우선주 등 종류주식은 발생순서에 따라 K부터 순차적으로 부여합니다. Z 이후부터는 미부여된 알파벳을 다시 순차적으로 부여하는데, 이때 I, O, U는 제외합니다.
+    # 우선주의 종목구분코드 구분은 2013년을 기준으로 약간 달라졌습니다. 2013년 이전까지 우선주는 5부터 순차적으로 홀수를 배정받았습니다. 현재 볼 수 있는 대부분의 우선주 코드 끝자리가 5인 이유입니다.
+    # 2번째 우선주는 7, 3번째 우선주는 9가 각각 배정됩니다. 사이사이 짝수는 기존에 상장한 우선주의 신주발행 시 부여됩니다.
+    filter = df['종목코드'].str.endswith('0')
+    df = df[filter]
 
-  print(df.shape, df.index, df.columns)
+    print(df.shape, df.columns)
 
-  df = df[df['EPS'] != '-']
 
-  df = df[df['PER'] != '-']
+    all_stock_list = df['종목코드'].tolist()
+    for index, stock_code in enumerate(all_stock_list):
+        if( stock_code not in tradable_stock_code_list ):
+            df.iat[index, 2] = np.nan
 
-  df = df[df['BPS'] != '-']
+    # - 로 적힌 셀 nan 처리후 제거 
+    df.replace('-', np.nan, inplace=True)
+    df.dropna(inplace=True)
+    df.reset_index(inplace=True, drop=True)
 
-  df = df[df['PBR'] != '-']
+    print(df.shape, df.columns)
+    # print(df.head(30))
+    return df
 
-  df = df.reset_index(drop=True)
-  print(df.shape, df.index, df.columns)
-  print(df.head(60))
-  return df
+def getStockListExceptWarning(header_string : str) -> list[str]:
+    '''
+    '''
+    df = pd.read_excel( '{}_stock_warning.xlsx'.format(header_string) )
+    # 불필요 열 삭제
+    df.drop(['투자주의환기종목', '단일가매매대상 초저유동성종목', '상장주식수 부족 우선주', '단기과열종목', '투자주의종목', '투자경고종목', '투자위험종목'], axis='columns', inplace=True)
+
+    # 매매 금지 종목 삭제 
+    df.replace('O', np.nan, inplace=True)
+
+    df.dropna(inplace=True, drop=True)
+
+    return df['종목코드'].tolist()
 
 
 if __name__ == "__main__":
 
     info_header = 'sample/2022_1Q'
+
+    tradable_stock_code_list = getStockListExceptWarning(info_header)
+    stock_basic_df = getStockBasicInfo(info_header)
+    stock_detail_df = getStockDetailInfo(info_header, tradable_stock_code_list)
 
     continue_bs_df = getBS(info_header + "_C")
     continue_pl_df = getPL(info_header + "_C")
@@ -126,8 +139,6 @@ if __name__ == "__main__":
     separate_bs_df = getBS(info_header)
     separate_pl_df = getPL(info_header)
 
-    stock_basic_df = getStockBasicInfo(info_header)
-    stock_detail_df = getStockDetailInfo(info_header)
 
 
     # merge 주식 정보 
@@ -280,7 +291,7 @@ if __name__ == "__main__":
 
     stock_detail_df.sort_values( by =['시가총액', 'PBR', 'PER', 'PSR', 'GP/A' ], inplace=True)
 
-    stock_detail_df.reset_index(inplace=True)
+    stock_detail_df.reset_index(inplace=True, drop=True)
     stock_detail_df.to_excel("result.xlsx")
 
     print("done")
