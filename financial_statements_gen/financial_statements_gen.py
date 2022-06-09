@@ -154,8 +154,6 @@ def calculatePER(stock_data : pd.DataFrame, pl_data : pd.DataFrame) -> pd.Series
 
   pass
 
-
-
 if __name__ == "__main__":
 
     user_setting_json = []
@@ -164,13 +162,6 @@ if __name__ == "__main__":
 
     api_key = user_setting_json['api_key']
     dart = OpenDartReader(api_key) 
-
-
-
-#     df.to_excel("result.xlsx")
-#   else :
-#     print(data_json['message'])
-
 
     info_header = 'sample/2022_1Q'
 
@@ -210,25 +201,33 @@ if __name__ == "__main__":
 
     #######################################################################################3
     # 매출액 컬럼 추가 
-    # 공시 정보 누락으로 인해 없는 경우 이전 데이터에서 가져와야 함 
     additional_stock_info_list = []
     column_name = '매출액'
 
     src_df = continue_pl_df
+    alternate_df = separate_pl_df
+
     for index, value in stock_detail_df['종목코드'].iteritems():
         temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_Revenue') )  ]
         # print(temp_df.head(10))
 
         if( len(temp_df) != 0 ):
-            additional_stock_info_list.append( temp_df.iloc[0]['당기 1분기 3개월'] )
+                # 컬럼 이름이 포함된 index 를 찾아 cell 값을 찾는다 
+                cell_contents =  temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기 3개월') ]
+                cell_contents = cell_contents.replace(',', '')
+                cell_contents = int(cell_contents)
+                additional_stock_info_list.append( cell_contents)
         else:
-            previous_df = separate_pl_df
-            temp_df = previous_df[ (previous_df['종목코드'].str.contains(value)) & (previous_df['항목코드'].str.contains('ifrs-full_Revenue') )  ]
+            temp_df = alternate_df[ (alternate_df['종목코드'].str.contains(value)) & (alternate_df['항목코드'].str.contains('ifrs-full_Revenue') )  ]
             # 기본정보에 없는 경우 이전 자료 searching 
 
             if( len(temp_df) != 0 ):
                 # 컬럼 이름이 포함된 index 를 찾아 cell 값을 찾는다 
-                additional_stock_info_list.append( temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기 3개월') ])
+                cell_contents =  temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기 3개월') ]
+                cell_contents = cell_contents.replace(',', '')
+                cell_contents = int(cell_contents)
+                additional_stock_info_list.append( cell_contents)
+
             else:
                 # print("매출액 누락 종목 {}".format( value ))
                 additional_stock_info_list.append( np.nan )
@@ -239,35 +238,81 @@ if __name__ == "__main__":
 
     #######################################################################################3
     # 매출총이익 컬럼 추가 
-    # 공시 정보 누락으로 인해 없는 경우 이전 데이터에서 가져와야 함 
     additional_stock_info_list = []
     column_name = '매출총이익'
 
     src_df = continue_pl_df
+    alternate_df = separate_pl_df
+
     for index, value in stock_detail_df['종목코드'].iteritems():
         temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_GrossProfit') )  ]
         # print(temp_df.head(10))
 
         if( len(temp_df) != 0 ):
-            additional_stock_info_list.append( temp_df.iloc[0]['당기 1분기 3개월'] )
+                # 컬럼 이름이 포함된 index 를 찾아 cell 값을 찾는다 
+                cell_contents =  temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기 3개월') ]
+                cell_contents = cell_contents.replace(',', '')
+                cell_contents = int(cell_contents)
+                additional_stock_info_list.append( cell_contents)
         else:
-            previous_df = separate_pl_df
-            temp_df = previous_df[ (previous_df['종목코드'].str.contains(value)) & (previous_df['항목코드'].str.contains('ifrs-full_grossProfit') )  ]
+            temp_df = alternate_df[ (alternate_df['종목코드'].str.contains(value)) & (alternate_df['항목코드'].str.contains('ifrs-full_grossProfit') )  ]
             # 기본정보에 없는 경우 이전 자료 searching 
 
             if( len(temp_df) != 0 ):
                 # 컬럼 이름이 포함된 index 를 찾아 cell 값을 찾는다 
-                additional_stock_info_list.append( temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기 3개월') ])
+                cell_contents =  temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기 3개월') ]
+                cell_contents = cell_contents.replace(',', '')
+                cell_contents = int(cell_contents)
+                additional_stock_info_list.append( cell_contents)
             else:
                 # print("매출총이익 누락 종목 {}".format( value ))
                 additional_stock_info_list.append( np.nan )
 
+    stock_detail_df[column_name] = additional_stock_info_list
+
+    #######################################################################################3
+    # 자산 컬럼 추가 
+    additional_stock_info_list = []
+    column_name = '자산'
+
+    src_df = continue_bs_df
+    alternate_df = separate_bs_df
+
+    for index, value in stock_detail_df['종목코드'].iteritems():
+        temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_EquityAndLiabilities|ifrs-full_Assets') )  ]
+        # print(temp_df.head(10))
+
+        if( len(temp_df) != 0 ):
+                # 컬럼 이름이 포함된 index 를 찾아 cell 값을 찾는다 
+                cell_contents =  temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기말') ]
+                cell_contents = cell_contents.replace(',', '')
+                cell_contents = int(cell_contents)
+                additional_stock_info_list.append( cell_contents)
+        else:
+            temp_df = alternate_df[ (alternate_df['종목코드'].str.contains(value)) & (alternate_df['항목코드'].str.contains('ifrs-full_grossProfit') )  ]
+            # 기본정보에 없는 경우 이전 자료 searching 
+
+            if( len(temp_df) != 0 ):
+                # 컬럼 이름이 포함된 index 를 찾아 cell 값을 찾는다 
+                cell_contents =  temp_df.iloc[0][ temp_df.columns.tolist().index('당기 1분기말') ]
+                cell_contents = cell_contents.replace(',', '')
+                cell_contents = int(cell_contents)
+                additional_stock_info_list.append( cell_contents)
+            else:
+                # print("매출총이익 누락 종목 {}".format( value ))
+                additional_stock_info_list.append( np.nan )
 
     stock_detail_df[column_name] = additional_stock_info_list
-    # stock_detail_df.dropna(inplace=True)
-    # stock_detail_df.reset_index(drop=True)
+
+
+    ####################################################################################
 
     print( len(stock_detail_df), stock_detail_df.head(10) )
+    stock_detail_df.to_excel("result_before_drop.xlsx")
+
+    stock_detail_df.dropna(inplace=True)
+    stock_detail_df.reset_index(inplace=True)
+
     stock_detail_df.to_excel("result.xlsx")
 
     print("done")
