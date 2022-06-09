@@ -20,7 +20,7 @@ def getBS(header_string : str) -> pd.DataFrame:
   '''
   재무 상태표
   '''
-  df = pd.read_csv( '{}_BS.txt'.format(header_string), sep='\t', encoding='euc-kr' )
+  df = pd.read_csv( '{}_BS.txt'.format(header_string), sep='\t', encoding='utf-8' )
   # 불필요 열 삭제 
   df.drop(['재무제표종류', '시장구분', '업종', '업종명', '통화'], axis='columns', inplace=True)
   # print(df.head(60))
@@ -47,7 +47,7 @@ def getPL(header_string : str) -> pd.DataFrame:
   매출액/매출원가/매출총이익만 봄
 
   '''
-  df = pd.read_csv( '{}_PL.txt'.format(header_string), sep='\t', encoding='euc-kr', encoding_errors='replace' )
+  df = pd.read_csv( '{}_PL.txt'.format(header_string), sep='\t', encoding='utf-8', encoding_errors='replace' )
   # 불필요 열 삭제 
   df.drop(['재무제표종류', '시장구분', '업종', '업종명', '통화'], axis='columns', inplace=True)
   # print(df.head(50))
@@ -172,17 +172,16 @@ if __name__ == "__main__":
 #     print(data_json['message'])
 
 
-    current_info_header = 'sample/2022_1Q'
-    previous_info_header = 'sample/2021_4Q'
+    info_header = 'sample/2022_1Q'
 
-    current_bs_df = getBS(current_info_header)
-    current_pl_df = getPL(current_info_header)
+    continue_bs_df = getBS(info_header + "_C")
+    continue_pl_df = getPL(info_header + "_C")
 
-    previous_bs_df = getBS(previous_info_header)
-    previous_pl_df = getPL(previous_info_header)
+    separate_bs_df = getBS(info_header)
+    separate_pl_df = getPL(info_header)
 
-    stock_basic_df = getStockBasicInfo(current_info_header)
-    stock_detail_df = getStockDetailInfo(current_info_header)
+    stock_basic_df = getStockBasicInfo(info_header)
+    stock_detail_df = getStockDetailInfo(info_header)
 
 
     # merge 주식 정보 
@@ -220,7 +219,7 @@ if __name__ == "__main__":
     delete_indexes = []
     column_name = '매출액'
 
-    src_df = current_pl_df
+    src_df = continue_pl_df
     for index, value in stock_detail_df['종목코드'].iteritems():
         temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_Revenue') )  ]
         # print(temp_df.head(10))
@@ -228,7 +227,7 @@ if __name__ == "__main__":
         if( len(temp_df) != 0 ):
             additional_stock_info_list.append( temp_df.iloc[0]['당기 1분기 3개월'] )
         else:
-            previous_df = previous_pl_df
+            previous_df = separate_pl_df
             temp_df = previous_df[ (previous_df['종목코드'].str.contains(value)) & (previous_df['항목코드'].str.contains('ifrs-full_Revenue') )  ]
             # 기본정보에 없는 경우 이전 자료 searching 
 
@@ -253,15 +252,15 @@ if __name__ == "__main__":
     delete_indexes = []
     column_name = '매출총이익'
 
-    src_df = current_pl_df
+    src_df = continue_pl_df
     for index, value in stock_detail_df['종목코드'].iteritems():
-        temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_grossProfit') )  ]
+        temp_df = src_df[ (src_df['종목코드'].str.contains(value)) & (src_df['항목코드'].str.contains('ifrs-full_GrossProfit') )  ]
         # print(temp_df.head(10))
 
         if( len(temp_df) != 0 ):
             additional_stock_info_list.append( temp_df.iloc[0]['당기 1분기 3개월'] )
         else:
-            previous_df = previous_pl_df
+            previous_df = separate_pl_df
             temp_df = previous_df[ (previous_df['종목코드'].str.contains(value)) & (previous_df['항목코드'].str.contains('ifrs-full_grossProfit') )  ]
             # 기본정보에 없는 경우 이전 자료 searching 
 
